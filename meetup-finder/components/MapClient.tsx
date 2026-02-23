@@ -27,22 +27,19 @@ type Place = {
 };
 
 /* =========================
-   VALIDATION LOGIC (QUAN TRỌNG)
+   VALIDATION LOGIC
    ========================= */
 function isValidPlace(p: Place): boolean {
-  // phải có tên
   if (!p.name || p.name.trim().length === 0) return false;
+  if (!p.address) return false;
 
   const addr = p.address.trim().toLowerCase();
 
-  // loại address rác / placeholder
   const invalid = ["unknown", "n/a", "null", "undefined", "-"];
   if (invalid.includes(addr)) return false;
 
-  // address quá ngắn → không có giá trị hiển thị
   if (addr.length < 6) return false;
 
-  // address nên có cấu trúc (có số nhà hoặc dấu ,)
   const hasStructure = addr.includes(",") || /\d/.test(addr);
   if (!hasStructure) return false;
 
@@ -72,17 +69,18 @@ export default function MapClient() {
   const [placeType, setPlaceType] =
     useState<"cafe" | "restaurant" | "sports" | "cinema">("cafe");
   const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   /* =========================
-     LOGIC
+     CORE LOGIC
      ========================= */
+
   const center = optimalMeetingPoint(users);
 
-  // tính khoảng cách giữa các điểm (m)
   function distance(
     a: { lat: number; lng: number },
     b: { lat: number; lng: number }
-    ) {
+  ) {
     const R = 6371e3;
     const φ1 = (a.lat * Math.PI) / 180;
     const φ2 = (b.lat * Math.PI) / 180;
@@ -90,8 +88,8 @@ export default function MapClient() {
     const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
 
     const x =
-        Math.sin(Δφ / 2) ** 2 +
-        Math.cos(φ1) *
+      Math.sin(Δφ / 2) ** 2 +
+      Math.cos(φ1) *
         Math.cos(φ2) *
         Math.sin(Δλ / 2) ** 2;
 
@@ -102,16 +100,14 @@ export default function MapClient() {
     let maxDistance = 0;
 
     for (let i = 0; i < users.length; i++) {
-        for (let j = i + 1; j < users.length; j++) {
+      for (let j = i + 1; j < users.length; j++) {
         const d = distance(users[i], users[j]);
         maxDistance = Math.max(maxDistance, d);
-        }
+      }
     }
 
-    // bán kính = 30% khoảng cách xa nhất
     const radius = maxDistance * 0.5;
 
-    // giới hạn an toàn
     return Math.min(Math.max(radius, 800), 12000);
   }
 
@@ -146,7 +142,7 @@ export default function MapClient() {
   }
 
   /* =========================
-     SEARCH PLACES (ỔN ĐỊNH)
+     SEARCH PLACES
      ========================= */
   async function searchPlaces() {
     if (users.length === 0) return;
@@ -154,39 +150,53 @@ export default function MapClient() {
     setLoadingPlaces(true);
 
     try {
-        const currentCenter = optimalMeetingPoint(users);
-        const radius = suggestedRadius(users);
+      const currentCenter = optimalMeetingPoint(users);
+      const radius = suggestedRadius(users);
 
-        const result = await findPlacesAround(
+      const result = await findPlacesAround(
         currentCenter.lat,
         currentCenter.lng,
         Math.round(radius),
         placeType
-        );
+      );
 
-        const filtered = result.filter(
-        (p) =>
-            p.name &&
-            p.name.trim() !== "" &&
-            p.address &&
-            p.address.trim() !== ""
-        );
-
-        setPlaces(filtered);
+      setPlaces(result);
     } finally {
-        setLoadingPlaces(false);
+      setLoadingPlaces(false);
     }
   }
 
   /* =========================
+     RANKING LOGIC
+     ========================= */
+
+  const rankedPlaces = places
+    .filter(isValidPlace)
+    .map((p) => {
+      const totalDistance = users.reduce(
+        (sum, u) => sum + distance(u, p),
+        0
+      );
+
+      return {
+        ...p,
+        totalDistance,
+      };
+    })
+    .sort((a, b) => a.totalDistance - b.totalDistance);
+
+  const displayedPlaces = showAll
+    ? rankedPlaces
+    : rankedPlaces.slice(0, 5);
+
+  /* =========================
      UI
      ========================= */
+
   return (
     <div className="space-y-4 p-4">
-      {/* Nhập địa chỉ */}
       <AddressInput onAddUser={addUser} />
 
-      {/* Chọn loại địa điểm */}
       <div className="flex gap-2 items-center">
         <select
           value={placeType}
@@ -206,16 +216,64 @@ export default function MapClient() {
             loadingPlaces ? "bg-gray-400" : "bg-green-600"
           }`}
         >
-          {loadingPlaces ? "🔍 Tìm kiếm..." : "Tìm địa điểm gần điểm gặp"}
+          {loadingPlaces
+            ? "🔍 Tìm kiếm..."
+            : "Tìm địa điểm gần điểm gặp"}
         </button>
       </div>
 
-      {/* MAP */}
-      <MapView users={users} center={center} places={places} />
+      {/* MAP — QUAN TRỌNG: dùng displayedPlaces */}
+      <MapView
+        users={users}
+        center={center}
+        places={displayedPlaces}
+      />
 
-      {/* DANH SÁCH ĐỊA CHỈ */}
+      {rankedPlaces.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            {showAll
+              ? "Hiển thị Top 5 tốt nhất"
+              : "Hiển thị toàn bộ địa điểm"}
+          </button>
+        </div>
+      )}
+
+      {rankedPlaces.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="font-semibold text-lg">
+            Địa điểm đề xuất theo tối ưu khoảng cách
+          </h2>
+
+          {displayedPlaces.map((p, index) => (
+            <div
+              key={p.id}
+              className="border p-2 rounded"
+            >
+              <div className="font-medium">
+                #{index + 1} {p.name}
+              </div>
+
+              <div className="text-sm text-gray-600">
+                {p.address}
+              </div>
+
+              <div className="text-sm text-gray-500">
+                Tổng khoảng cách:{" "}
+                {(p.totalDistance / 1000).toFixed(2)} km
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-2">
-        <h2 className="font-semibold text-lg">Danh sách địa chỉ đã thêm</h2>
+        <h2 className="font-semibold text-lg">
+          Danh sách địa chỉ đã thêm
+        </h2>
 
         {users.map((u) => (
           <div
@@ -224,13 +282,17 @@ export default function MapClient() {
           >
             <input
               value={u.name}
-              onChange={(e) => updateUserName(u.id, e.target.value)}
+              onChange={(e) =>
+                updateUserName(u.id, e.target.value)
+              }
               className="border px-2 py-1 rounded w-32"
             />
 
             <div className="text-sm text-gray-600 flex-1">
               {u.address ??
-                `Lat: ${u.lat.toFixed(5)}, Lng: ${u.lng.toFixed(5)}`}
+                `Lat: ${u.lat.toFixed(5)}, Lng: ${u.lng.toFixed(
+                  5
+                )}`}
             </div>
 
             <button
@@ -249,8 +311,9 @@ export default function MapClient() {
 
         {!loadingPlaces && places.length === 0 && (
           <div className="text-sm text-gray-500">
-            Không tìm thấy địa điểm phù hợp quanh điểm gặp.  
-            Hãy thử tăng số người, đổi loại địa điểm hoặc khu vực khác.
+            Không tìm thấy địa điểm phù hợp quanh
+            điểm gặp. Hãy thử đổi loại địa điểm
+            hoặc khu vực khác.
           </div>
         )}
       </div>
