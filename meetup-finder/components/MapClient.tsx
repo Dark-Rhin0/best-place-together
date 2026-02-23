@@ -171,7 +171,7 @@ export default function MapClient() {
      ========================= */
 
   const rankedPlaces = places
-    .filter(isValidPlace)
+    //.filter(isValidPlace)
     .map((p) => {
       const totalDistance = users.reduce(
         (sum, u) => sum + distance(u, p),
