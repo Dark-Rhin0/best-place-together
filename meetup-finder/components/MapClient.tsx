@@ -70,7 +70,7 @@ export default function MapClient() {
 
   const [places, setPlaces] = useState<Place[]>([]);
   const [placeType, setPlaceType] =
-    useState<"cafe" | "restaurant" | "sports">("cafe");
+    useState<"cafe" | "restaurant" | "sports" | "cinema">("cafe");
   const [loadingPlaces, setLoadingPlaces] = useState(false);
 
   /* =========================
@@ -136,6 +136,15 @@ export default function MapClient() {
     );
   }
 
+  async function loadCommunityPlaces() {
+    const res = await fetch(
+      `/api/community-places?lat=${center.lat}&lng=${center.lng}&radius=5000`
+    );
+
+    const data = await res.json();
+    setPlaces(data);
+  }
+
   /* =========================
      SEARCH PLACES (ỔN ĐỊNH)
      ========================= */
@@ -187,6 +196,7 @@ export default function MapClient() {
           <option value="cafe">☕ Quán cà phê</option>
           <option value="restaurant">🍽 Nhà hàng</option>
           <option value="sports">⚽ Sân bóng</option>
+          <option value="cinema">🎬 Rạp chiếu phim</option>
         </select>
 
         <button
