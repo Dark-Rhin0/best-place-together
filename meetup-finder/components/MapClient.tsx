@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { optimalMeetingPoint } from "@/lib/geo";
 import AddressInput from "./AddressInput";
 import { findPlacesAround } from "@/lib/overpass";
@@ -170,24 +170,34 @@ export default function MapClient() {
      RANKING LOGIC
      ========================= */
 
-  const rankedPlaces = places
-    //.filter(isValidPlace)
-    .map((p) => {
-      const totalDistance = users.reduce(
+  /* =========================
+   RANKING LOGIC (OPTIMIZED)
+   ========================= */
+
+const rankedPlaces = useMemo(() => {
+  if (places.length === 0) return [];
+
+  return places
+    //.filter(isValidPlace) // bật lại nếu cần
+    .map((p) => ({
+      ...p,
+      totalDistance: users.reduce(
         (sum, u) => sum + distance(u, p),
         0
-      );
+      ),
+    }));
+}, [places, users]);
 
-      return {
-        ...p,
-        totalDistance,
-      };
-    })
-    .sort((a, b) => a.totalDistance - b.totalDistance);
+const displayedPlaces = useMemo(() => {
+  if (rankedPlaces.length === 0) return [];
 
-  const displayedPlaces = showAll
-    ? rankedPlaces
-    : rankedPlaces.slice(0, 5);
+  // Nếu chỉ cần top 5 → không cần giữ thứ tự gốc
+  const sorted = [...rankedPlaces].sort(
+    (a, b) => a.totalDistance - b.totalDistance
+  );
+
+  return showAll ? sorted : sorted.slice(0, 5);
+}, [rankedPlaces, showAll]);
 
   /* =========================
      UI

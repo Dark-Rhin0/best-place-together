@@ -61,7 +61,7 @@ export default function MapClient() {
   return (
     <div className="p-6 text-white space-y-6">
       <h1 className="text-xl font-bold">
-        Tìm địa điểm gặp mặt tối ưu
+        Tìm địa điểm
       </h1>
 
       <div className="bg-gray-800 p-4 rounded">

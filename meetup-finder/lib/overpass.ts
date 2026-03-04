@@ -12,10 +12,10 @@ export async function findPlacesAround(
   };
 
   const fallbackRegex: Record<string, string> = {
-    cafe: 'cafe|coffee',
+    cafe: 'cafe|coffee|tra sua',
     restaurant: 'restaurant|quan an|nha hang',
-    sports: 'sport|gym|fitness|san',
-    cinema: 'cinema|movie|theatre|rap',
+    sports: 'sport|san|mini',
+    cinema: 'cinema|movie|theatre|rap|phim',
   };
 
   async function runQuery(inner: string) {
@@ -88,7 +88,7 @@ function collect(data: any, map: Map<number, any>) {
 
     map.set(el.id, {
       id: el.id,
-      name: t.name?.trim() || "Không tên",
+      name: t.name?.trim() || "địa điểm Không tên",
       lat: latValue,
       lng: lngValue,
       address: formatAddress(t),
