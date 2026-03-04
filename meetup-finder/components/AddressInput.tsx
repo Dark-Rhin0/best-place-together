@@ -53,9 +53,10 @@ export default function AddressInput({ onAddUser }: Props) {
   }
 
   function handleSelect(s: Suggestion) {
-    setAddress(s.displayName);
-    setSuggestions([]);
-    onAddUser({ lat: s.lat, lng: s.lng });
+    onAddUser({ lat: s.lat, lng: s.lng }); // add marker
+
+    setAddress("");       // ✅ clear input
+    setSuggestions([]);   // ✅ clear dropdown
   }
 
   return (
