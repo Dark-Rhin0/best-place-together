@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { optimalMeetingPoint } from "@/lib/geo";
 import AddressInput from "./AddressInput";
 import { findPlacesAround } from "@/lib/overpass";
@@ -30,26 +30,53 @@ type Place = {
    VALIDATION LOGIC
    ========================= */
 function isValidPlace(p: Place): boolean {
-  if (!p.name || p.name.trim().length === 0) return false;
-  if (!p.address) return false;
+  if (!p.name) return false;
 
-  const addr = p.address.trim().toLowerCase();
+  const name = p.name.trim().toLowerCase();
 
-  const invalid = ["unknown", "n/a", "null", "undefined", "-"];
-  if (invalid.includes(addr)) return false;
+  if (name.length === 0) return false;
 
-  if (addr.length < 6) return false;
+  const invalidNames = [
+    "unknown",
+    "unnamed",
+    "n/a",
+    "null",
+    "-",
+    "yes",
+  ];
 
-  const hasStructure = addr.includes(",") || /\d/.test(addr);
-  if (!hasStructure) return false;
+  if (invalidNames.includes(name)) return false;
 
   return true;
+}
+
+/* =========================
+   DISTANCE FUNCTION
+   ========================= */
+function distance(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
+  const R = 6371e3;
+  const φ1 = (a.lat * Math.PI) / 180;
+  const φ2 = (b.lat * Math.PI) / 180;
+  const Δφ = ((b.lat - a.lat) * Math.PI) / 180;
+  const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
+
+  const x =
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) *
+      Math.cos(φ2) *
+      Math.sin(Δλ / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
 export default function MapClient() {
   /* =========================
      STATE
      ========================= */
+
   const [users, setUsers] = useState<User[]>([
     {
       id: crypto.randomUUID(),
@@ -71,30 +98,13 @@ export default function MapClient() {
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   /* =========================
      CORE LOGIC
      ========================= */
 
   const center = optimalMeetingPoint(users);
-
-  function distance(
-    a: { lat: number; lng: number },
-    b: { lat: number; lng: number }
-  ) {
-    const R = 6371e3;
-    const φ1 = (a.lat * Math.PI) / 180;
-    const φ2 = (b.lat * Math.PI) / 180;
-    const Δφ = ((b.lat - a.lat) * Math.PI) / 180;
-    const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
-
-    const x =
-      Math.sin(Δφ / 2) ** 2 +
-      Math.cos(φ1) *
-        Math.cos(φ2) *
-        Math.sin(Δλ / 2) ** 2;
-
-    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-  }
 
   function suggestedRadius(users: User[]) {
     let maxDistance = 0;
@@ -132,20 +142,19 @@ export default function MapClient() {
     );
   }
 
-  async function loadCommunityPlaces() {
-    const res = await fetch(
-      `/api/community-places?lat=${center.lat}&lng=${center.lng}&radius=5000`
-    );
-
-    const data = await res.json();
-    setPlaces(data);
-  }
-
   /* =========================
      SEARCH PLACES
      ========================= */
+
   async function searchPlaces() {
     if (users.length === 0) return;
+
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setLoadingPlaces(true);
 
@@ -157,10 +166,15 @@ export default function MapClient() {
         currentCenter.lat,
         currentCenter.lng,
         Math.round(radius),
-        placeType
+        placeType,
+        controller.signal
       );
 
       setPlaces(result);
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        console.error("Search places error:", err);
+      }
     } finally {
       setLoadingPlaces(false);
     }
@@ -170,34 +184,29 @@ export default function MapClient() {
      RANKING LOGIC
      ========================= */
 
-  /* =========================
-   RANKING LOGIC (OPTIMIZED)
-   ========================= */
+  const rankedPlaces = useMemo(() => {
+    if (places.length === 0) return [];
 
-const rankedPlaces = useMemo(() => {
-  if (places.length === 0) return [];
+    return places
+      .filter(isValidPlace)
+      .map((p) => ({
+        ...p,
+        totalDistance: users.reduce(
+          (sum, u) => sum + distance(u, p),
+          0
+        ),
+      }));
+  }, [places, users]);
 
-  return places
-    //.filter(isValidPlace) // bật lại nếu cần
-    .map((p) => ({
-      ...p,
-      totalDistance: users.reduce(
-        (sum, u) => sum + distance(u, p),
-        0
-      ),
-    }));
-}, [places, users]);
+  const displayedPlaces = useMemo(() => {
+    if (rankedPlaces.length === 0) return [];
 
-const displayedPlaces = useMemo(() => {
-  if (rankedPlaces.length === 0) return [];
+    const sorted = [...rankedPlaces].sort(
+      (a, b) => a.totalDistance - b.totalDistance
+    );
 
-  // Nếu chỉ cần top 5 → không cần giữ thứ tự gốc
-  const sorted = [...rankedPlaces].sort(
-    (a, b) => a.totalDistance - b.totalDistance
-  );
-
-  return showAll ? sorted : sorted.slice(0, 5);
-}, [rankedPlaces, showAll]);
+    return showAll ? sorted : sorted.slice(0, 5);
+  }, [rankedPlaces, showAll]);
 
   /* =========================
      UI
@@ -232,7 +241,6 @@ const displayedPlaces = useMemo(() => {
         </button>
       </div>
 
-      {/* MAP — QUAN TRỌNG: dùng displayedPlaces */}
       <MapView
         users={users}
         center={center}
@@ -259,10 +267,7 @@ const displayedPlaces = useMemo(() => {
           </h2>
 
           {displayedPlaces.map((p, index) => (
-            <div
-              key={p.id}
-              className="border p-2 rounded"
-            >
+            <div key={p.id} className="border p-2 rounded">
               <div className="font-medium">
                 #{index + 1} {p.name}
               </div>
@@ -318,14 +323,6 @@ const displayedPlaces = useMemo(() => {
             </button>
           </div>
         ))}
-
-        {!loadingPlaces && places.length === 0 && (
-          <div className="text-sm text-gray-500">
-            Không tìm thấy địa điểm phù hợp quanh
-            điểm gặp. Hãy thử đổi loại địa điểm
-            hoặc khu vực khác.
-          </div>
-        )}
       </div>
     </div>
   );

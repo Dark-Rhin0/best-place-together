@@ -86,9 +86,11 @@ function collect(data: any, map: Map<number, any>) {
     if (typeof latValue !== "number" || typeof lngValue !== "number")
       continue;
 
+    if (!t.name || t.name.trim().length === 0) continue;
+
     map.set(el.id, {
       id: el.id,
-      name: t.name?.trim() || "địa điểm Không tên",
+      name: t.name.trim(),
       lat: latValue,
       lng: lngValue,
       address: formatAddress(t),
