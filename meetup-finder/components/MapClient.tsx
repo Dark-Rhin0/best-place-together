@@ -95,24 +95,7 @@ export default function MapClient() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [placeType, setPlaceType] =
     useState<"cafe" | "restaurant" | "sports" | "cinema">("cafe");
-  const [searchRadius, setSearchRadius] = useState<number>(800);
-
-  // Update radius whenever users change
-  useEffect(() => {
-    if (users.length < 2) {
-      setSearchRadius(800);
-      return;
-    }
-    let maxDist = 0;
-    for (let i = 0; i < users.length; i++) {
-      for (let j = i + 1; j < users.length; j++) {
-        const d = distance(users[i], users[j]);
-        maxDist = Math.max(maxDist, d);
-      }
-    }
-    const radius = Math.min(Math.max(maxDist * 0.9, 800), 12000);
-    setSearchRadius(radius);
-  }, [users]);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
 
@@ -179,7 +162,7 @@ export default function MapClient() {
 
     try {
       const currentCenter = optimalMeetingPoint(users);
-      const radius = searchRadius;
+      const radius = suggestedRadius(users);
 
       const result = await findPlacesAround(
         currentCenter.lat,
