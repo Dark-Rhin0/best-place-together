@@ -97,6 +97,7 @@ export default function MapClient() {
     useState<"cafe" | "restaurant" | "sports" | "cinema">("cafe");
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [searchAttempted, setSearchAttempted] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -155,7 +156,7 @@ export default function MapClient() {
 
     const controller = new AbortController();
     abortRef.current = controller;
-
+    setSearchAttempted(false); // Reset before new search
     setLoadingPlaces(true);
 
     try {
@@ -171,6 +172,7 @@ export default function MapClient() {
       );
 
       setPlaces(result);
+      setSearchAttempted(true);
     } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error("Search places error:", err);
@@ -246,6 +248,12 @@ export default function MapClient() {
         center={center}
         places={displayedPlaces}
       />
+
+      {/* No results notification */}
+      {searchAttempted && rankedPlaces.length === 0 && (
+        <p className="text-red-600 mt-4">❗ Không tìm thấy địa điểm phù hợp.</p>
+      )}
+
 
       {rankedPlaces.length > 0 && (
         <div>
