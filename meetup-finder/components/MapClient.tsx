@@ -66,8 +66,8 @@ function distance(
   const x =
     Math.sin(Δφ / 2) ** 2 +
     Math.cos(φ1) *
-      Math.cos(φ2) *
-      Math.sin(Δλ / 2) ** 2;
+    Math.cos(φ2) *
+    Math.sin(Δλ / 2) ** 2;
 
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
@@ -95,7 +95,24 @@ export default function MapClient() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [placeType, setPlaceType] =
     useState<"cafe" | "restaurant" | "sports" | "cinema">("cafe");
-  const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [searchRadius, setSearchRadius] = useState<number>(800);
+
+  // Update radius whenever users change
+  useEffect(() => {
+    if (users.length < 2) {
+      setSearchRadius(800);
+      return;
+    }
+    let maxDist = 0;
+    for (let i = 0; i < users.length; i++) {
+      for (let j = i + 1; j < users.length; j++) {
+        const d = distance(users[i], users[j]);
+        maxDist = Math.max(maxDist, d);
+      }
+    }
+    const radius = Math.min(Math.max(maxDist * 0.9, 800), 12000);
+    setSearchRadius(radius);
+  }, [users]);
   const [showAll, setShowAll] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
 
@@ -117,7 +134,7 @@ export default function MapClient() {
       }
     }
 
-    const radius = maxDistance * 0.5;
+    const radius = maxDistance * 0.9;
 
     return Math.min(Math.max(radius, 800), 12000);
   }
@@ -157,11 +174,12 @@ export default function MapClient() {
     const controller = new AbortController();
     abortRef.current = controller;
     setSearchAttempted(false); // Reset before new search
+    setPlaces([]);
     setLoadingPlaces(true);
 
     try {
       const currentCenter = optimalMeetingPoint(users);
-      const radius = suggestedRadius(users);
+      const radius = searchRadius;
 
       const result = await findPlacesAround(
         currentCenter.lat,
@@ -233,9 +251,8 @@ export default function MapClient() {
         <button
           onClick={searchPlaces}
           disabled={loadingPlaces}
-          className={`px-4 py-2 rounded text-white ${
-            loadingPlaces ? "bg-gray-400" : "bg-green-600"
-          }`}
+          className={`px-4 py-2 rounded text-white ${loadingPlaces ? "bg-gray-400" : "bg-green-600"
+            }`}
         >
           {loadingPlaces
             ? "🔍 Tìm kiếm..."
@@ -255,7 +272,7 @@ export default function MapClient() {
       )}
 
 
-      {rankedPlaces.length > 0 && (
+      {rankedPlaces.length > 5 && (
         <div>
           <button
             onClick={() => setShowAll(!showAll)}

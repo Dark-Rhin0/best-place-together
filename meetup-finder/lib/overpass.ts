@@ -12,7 +12,7 @@ export async function findPlacesAround(
   };
 
   const fallbackRegex: Record<string, string> = {
-    cafe: 'cafe|coffee|tra sua',
+    cafe: 'cafe|coffee|tra sua|ca phe',
     restaurant: 'restaurant|quan an|nha hang|quan com',
     sports: 'sport|san|mini|banh',
     cinema: 'cinema|movie|theatre|rap|phim',
