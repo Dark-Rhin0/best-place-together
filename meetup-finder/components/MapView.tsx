@@ -77,8 +77,8 @@ function distance(
   const x =
     Math.sin(Δφ / 2) ** 2 +
     Math.cos(φ1) *
-      Math.cos(φ2) *
-      Math.sin(Δλ / 2) ** 2;
+    Math.cos(φ2) *
+    Math.sin(Δλ / 2) ** 2;
 
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
@@ -125,8 +125,8 @@ export default function MapView({
   const nearestPlace =
     places.length > 0
       ? places.reduce((a, b) =>
-          distance(center, a) < distance(center, b) ? a : b
-        )
+        distance(center, a) < distance(center, b) ? a : b
+      )
       : null;
 
   return (
@@ -152,9 +152,15 @@ export default function MapView({
       ))}
 
       {/* CENTER */}
-      <Marker position={[center.lat, center.lng]} icon={yellowIcon}>
-        <Popup>📍 Điểm gặp tối ưu</Popup>
-      </Marker>
+      {/* CENTER */}
+      {users.length > 0 && (
+        <Marker
+          position={[center.lat, center.lng]}
+          icon={yellowIcon}
+        >
+          <Popup>📍 Điểm gặp tối ưu</Popup>
+        </Marker>
+      )}
 
       {/* PLACES */}
       {places.map((p) => (

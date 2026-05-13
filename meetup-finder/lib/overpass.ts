@@ -7,14 +7,14 @@ export async function findPlacesAround(
   const preciseTags: Record<string, string> = {
     cafe: '["amenity"="cafe"]',
     restaurant: '["amenity"="restaurant"]',
-    sports: '["leisure"="pitch"]',
+    sports: '["sport"~"soccer|futsal"]',
     cinema: '["amenity"="cinema"]',
   };
 
   const fallbackRegex: Record<string, string> = {
     cafe: 'cafe|coffee|tra sua|ca phe',
     restaurant: 'restaurant|quan an|nha hang|quan com',
-    sports: 'sport|san|mini|banh',
+    sports: 'sport|san bong|mini|banh|bong da|san bong da',
     cinema: 'cinema|movie|theatre|rap|phim',
   };
 

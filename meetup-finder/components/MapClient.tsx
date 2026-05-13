@@ -28,7 +28,7 @@ type Place = {
 
 /* =========================
    VALIDATION LOGIC
-   ========================= */
+========================= */
 function isValidPlace(p: Place): boolean {
   if (!p.name) return false;
 
@@ -45,21 +45,21 @@ function isValidPlace(p: Place): boolean {
     "yes",
   ];
 
-  if (invalidNames.includes(name)) return false;
-
-  return true;
+  return !invalidNames.includes(name);
 }
 
 /* =========================
    DISTANCE FUNCTION
-   ========================= */
+========================= */
 function distance(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number }
 ) {
   const R = 6371e3;
+
   const φ1 = (a.lat * Math.PI) / 180;
   const φ2 = (b.lat * Math.PI) / 180;
+
   const Δφ = ((b.lat - a.lat) * Math.PI) / 180;
   const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
 
@@ -75,77 +75,139 @@ function distance(
 export default function MapClient() {
   /* =========================
      STATE
-     ========================= */
+  ========================= */
 
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: crypto.randomUUID(),
-      name: "Thành viên 1",
-      lat: 10.8169,
-      lng: 106.60383,
-    },
-    {
-      id: crypto.randomUUID(),
-      name: "Thành viên 2",
-      lat: 10.86822,
-      lng: 106.61484,
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const [places, setPlaces] = useState<Place[]>([]);
-  const [placeType, setPlaceType] =
-    useState<"cafe" | "restaurant" | "sports" | "cinema">("cafe");
-  const [loadingPlaces, setLoadingPlaces] = useState(false);
-  const [showAll, setShowAll] = useState(false);
-  const [searchAttempted, setSearchAttempted] = useState(false);
 
-  const abortRef = useRef<AbortController | null>(null);
+  const [placeType, setPlaceType] =
+    useState<
+      "cafe" | "restaurant" | "sports" | "cinema"
+    >("cafe");
+
+  const [loadingPlaces, setLoadingPlaces] =
+    useState(false);
+
+  const [showAll, setShowAll] =
+    useState(false);
+
+  const [searchAttempted, setSearchAttempted] =
+    useState(false);
+
+  const abortRef =
+    useRef<AbortController | null>(null);
 
   /* =========================
-     CORE LOGIC
-     ========================= */
+     DEFAULT MAP CENTER
+  ========================= */
 
-  const center = optimalMeetingPoint(users);
+  const defaultCenter = {
+    lat: 10.8231,
+    lng: 106.6297,
+  };
+
+  /* =========================
+     OPTIMAL CENTER
+  ========================= */
+
+  const center =
+    users.length > 0
+      ? optimalMeetingPoint(users)
+      : defaultCenter;
+
+  /* =========================
+     RADIUS SUGGESTION
+  ========================= */
 
   function suggestedRadius(users: User[]) {
     let maxDistance = 0;
 
     for (let i = 0; i < users.length; i++) {
-      for (let j = i + 1; j < users.length; j++) {
-        const d = distance(users[i], users[j]);
-        maxDistance = Math.max(maxDistance, d);
+      for (
+        let j = i + 1;
+        j < users.length;
+        j++
+      ) {
+        const d = distance(
+          users[i],
+          users[j]
+        );
+
+        maxDistance = Math.max(
+          maxDistance,
+          d
+        );
       }
     }
 
     const radius = maxDistance * 0.9;
 
-    return Math.min(Math.max(radius, 800), 12000);
+    return Math.min(
+      Math.max(radius, 800),
+      12000
+    );
   }
 
-  function addUser(u: Omit<User, "id" | "name">) {
+  /* =========================
+     USER FUNCTIONS
+  ========================= */
+
+  function addUser(
+    u: Omit<User, "id" | "name">
+  ) {
     setUsers((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
-        name: `Thành viên ${prev.length + 1}`,
+        name: `Thành viên ${prev.length + 1
+          }`,
         ...u,
       },
     ]);
   }
 
+  const addTestUsers = () => {
+    const testUsers: User[] = [
+      {
+        id: crypto.randomUUID(),
+        name: "Thành viên 1",
+        lat: 10.8169,
+        lng: 106.60383,
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Thành viên 2",
+        lat: 10.86822,
+        lng: 106.61484,
+      },
+    ];
+
+    setUsers(testUsers);
+  };
+
   function removeUser(id: string) {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
+    setUsers((prev) =>
+      prev.filter((u) => u.id !== id)
+    );
   }
 
-  function updateUserName(id: string, name: string) {
+  function updateUserName(
+    id: string,
+    name: string
+  ) {
     setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, name } : u))
+      prev.map((u) =>
+        u.id === id
+          ? { ...u, name }
+          : u
+      )
     );
   }
 
   /* =========================
      SEARCH PLACES
-     ========================= */
+  ========================= */
 
   async function searchPlaces() {
     if (users.length === 0) return;
@@ -154,29 +216,39 @@ export default function MapClient() {
       abortRef.current.abort();
     }
 
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
+
     abortRef.current = controller;
-    setSearchAttempted(false); // Reset before new search
+
+    setSearchAttempted(false);
     setPlaces([]);
     setLoadingPlaces(true);
 
     try {
-      const currentCenter = optimalMeetingPoint(users);
-      const radius = suggestedRadius(users);
+      const currentCenter =
+        optimalMeetingPoint(users);
 
-      const result = await findPlacesAround(
-        currentCenter.lat,
-        currentCenter.lng,
-        Math.round(radius),
-        placeType,
-        controller.signal
-      );
+      const radius =
+        suggestedRadius(users);
+
+      const result =
+        await findPlacesAround(
+          currentCenter.lat,
+          currentCenter.lng,
+          Math.round(radius),
+          placeType,
+          controller.signal
+        );
 
       setPlaces(result);
       setSearchAttempted(true);
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        console.error("Search places error:", err);
+        console.error(
+          "Search places error:",
+          err
+        );
       }
     } finally {
       setLoadingPlaces(false);
@@ -185,7 +257,7 @@ export default function MapClient() {
 
   /* =========================
      RANKING LOGIC
-     ========================= */
+  ========================= */
 
   const rankedPlaces = useMemo(() => {
     if (places.length === 0) return [];
@@ -195,46 +267,83 @@ export default function MapClient() {
       .map((p) => ({
         ...p,
         totalDistance: users.reduce(
-          (sum, u) => sum + distance(u, p),
+          (sum, u) =>
+            sum + distance(u, p),
           0
         ),
       }));
   }, [places, users]);
 
   const displayedPlaces = useMemo(() => {
-    if (rankedPlaces.length === 0) return [];
+    if (rankedPlaces.length === 0)
+      return [];
 
     const sorted = [...rankedPlaces].sort(
-      (a, b) => a.totalDistance - b.totalDistance
+      (a, b) =>
+        a.totalDistance -
+        b.totalDistance
     );
 
-    return showAll ? sorted : sorted.slice(0, 5);
+    return showAll
+      ? sorted
+      : sorted.slice(0, 5);
   }, [rankedPlaces, showAll]);
 
   /* =========================
      UI
-     ========================= */
+  ========================= */
 
   return (
     <div className="space-y-4 p-4">
-      <AddressInput onAddUser={addUser} />
+      {/* ADDRESS INPUT + TEST BUTTON */}
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
+          <AddressInput
+            onAddUser={addUser}
+          />
+        </div>
+      </div>
+      <button
+        onClick={addTestUsers}
+        className="px-4 py-2 bg-purple-600 text-white rounded whitespace-nowrap"
+      >
+        Thêm 2 địa chỉ để test
+      </button>
 
+      {/* SEARCH CONTROLS */}
       <div className="flex gap-2 items-center">
         <select
           value={placeType}
-          onChange={(e) => setPlaceType(e.target.value as any)}
+          onChange={(e) =>
+            setPlaceType(
+              e.target.value as any
+            )
+          }
           className="p-2 rounded border"
         >
-          <option value="cafe">☕ Quán cà phê</option>
-          <option value="restaurant">🍽 Nhà hàng</option>
-          <option value="sports">⚽ Sân bóng</option>
-          <option value="cinema">🎬 Rạp chiếu phim</option>
+          <option value="cafe">
+            ☕ Quán cà phê
+          </option>
+
+          <option value="restaurant">
+            🍽 Nhà hàng
+          </option>
+
+          <option value="sports">
+            ⚽ Sân bóng
+          </option>
+
+          <option value="cinema">
+            🎬 Rạp chiếu phim
+          </option>
         </select>
 
         <button
           onClick={searchPlaces}
           disabled={loadingPlaces}
-          className={`px-4 py-2 rounded text-white ${loadingPlaces ? "bg-gray-400" : "bg-green-600"
+          className={`px-4 py-2 rounded text-white ${loadingPlaces
+            ? "bg-gray-400"
+            : "bg-green-600"
             }`}
         >
           {loadingPlaces
@@ -243,22 +352,29 @@ export default function MapClient() {
         </button>
       </div>
 
+      {/* MAP */}
       <MapView
         users={users}
         center={center}
         places={displayedPlaces}
       />
 
-      {/* No results notification */}
-      {searchAttempted && rankedPlaces.length === 0 && (
-        <p className="text-red-600 mt-4">❗ Không tìm thấy địa điểm phù hợp.</p>
-      )}
+      {/* NO RESULTS */}
+      {searchAttempted &&
+        rankedPlaces.length === 0 && (
+          <p className="text-red-600 mt-4">
+            ❗ Không tìm thấy địa điểm
+            phù hợp.
+          </p>
+        )}
 
-
+      {/* SHOW ALL BUTTON */}
       {rankedPlaces.length > 5 && (
         <div>
           <button
-            onClick={() => setShowAll(!showAll)}
+            onClick={() =>
+              setShowAll(!showAll)
+            }
             className="px-4 py-2 bg-blue-600 text-white rounded"
           >
             {showAll
@@ -268,31 +384,42 @@ export default function MapClient() {
         </div>
       )}
 
+      {/* PLACE LIST */}
       {rankedPlaces.length > 0 && (
         <div className="space-y-2">
           <h2 className="font-semibold text-lg">
-            Địa điểm đề xuất theo tối ưu khoảng cách
+            Địa điểm đề xuất theo tối ưu
+            khoảng cách
           </h2>
 
-          {displayedPlaces.map((p, index) => (
-            <div key={p.id} className="border p-2 rounded">
-              <div className="font-medium">
-                #{index + 1} {p.name}
-              </div>
+          {displayedPlaces.map(
+            (p, index) => (
+              <div
+                key={p.id}
+                className="border p-2 rounded"
+              >
+                <div className="font-medium">
+                  #{index + 1} {p.name}
+                </div>
 
-              <div className="text-sm text-gray-600">
-                {p.address}
-              </div>
+                <div className="text-sm text-gray-600">
+                  {p.address}
+                </div>
 
-              <div className="text-sm text-gray-500">
-                Tổng khoảng cách:{" "}
-                {(p.totalDistance / 1000).toFixed(2)} km
+                <div className="text-sm text-gray-500">
+                  Tổng khoảng cách:{" "}
+                  {(
+                    p.totalDistance / 1000
+                  ).toFixed(2)}{" "}
+                  km
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       )}
 
+      {/* USER LIST */}
       <div className="space-y-2">
         <h2 className="font-semibold text-lg">
           Danh sách địa chỉ đã thêm
@@ -306,26 +433,28 @@ export default function MapClient() {
             <input
               value={u.name}
               onChange={(e) =>
-                updateUserName(u.id, e.target.value)
+                updateUserName(
+                  u.id,
+                  e.target.value
+                )
               }
               className="border px-2 py-1 rounded w-32"
             />
 
             <div className="text-sm text-gray-600 flex-1">
               {u.address ??
-                `Lat: ${u.lat.toFixed(5)}, Lng: ${u.lng.toFixed(
+                `Lat: ${u.lat.toFixed(
+                  5
+                )}, Lng: ${u.lng.toFixed(
                   5
                 )}`}
             </div>
 
             <button
-              onClick={() => removeUser(u.id)}
-              disabled={users.length === 1}
-              className={
-                users.length === 1
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-red-600"
+              onClick={() =>
+                removeUser(u.id)
               }
+              className="text-red-600"
             >
               Xóa
             </button>
