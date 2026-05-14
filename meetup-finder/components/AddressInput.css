@@ -29,9 +29,23 @@
 }
 
 .address-field:focus {
+  color: hsl(var(--muted-foreground));
   border-color: hsl(var(--accent));
   background-color: #ffffff;
   box-shadow: 0 0 0 4px hsla(var(--accent), 0.15);
+}
+
+.dark .address-field:focus {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.address-field::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .address-field::placeholder {
+  color: hsl(var(--foreground));
 }
 
 .input-icon {
@@ -49,13 +63,19 @@
   left: 0;
   width: 100%;
   margin-top: 0.5rem;
-  background-color: hsl(var(--card));
+  color: hsl(var(--card));
+  background-color: hsl(var(--card-foreground));
   border: 1px solid hsl(var(--border));
   border-radius: 1rem;
   box-shadow: var(--shadow);
   max-height: 16rem;
   overflow-y: auto;
   animation: slide-down 0.2s ease-out;
+}
+
+.dark .suggestions-dropdown {
+  color: hsl(var(--card-foreground));
+  background-color: hsl(var(--card));
 }
 
 .suggestion-item {

@@ -54,6 +54,19 @@
   color: #ffffff;
 }
 
+.search-type {
+  color: #000000;
+  background-color: #f0f0f0;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .theme-toggle {
   padding: 0.625rem;
   border-radius: 1rem;
@@ -159,9 +172,13 @@
   border: none;
   font-size: 0.875rem;
   font-weight: 900;
-  color: hsl(var(--foreground));
+  color: hsl(var(--background));
   width: 100%;
   outline: none;
+}
+
+.dark .member-name-input {
+  color: hsl(var(--foreground));
 }
 
 .place-card {

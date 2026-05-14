@@ -64,7 +64,7 @@ export default function AddressInput({ onAddUser }: Props) {
       <div className="input-wrapper">
         <input
           className="address-field"
-          placeholder="Bạn đang ở đâu nè?..."
+          placeholder="nhập địa chỉ ở đây..."
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />

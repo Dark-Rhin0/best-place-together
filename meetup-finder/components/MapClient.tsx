@@ -319,7 +319,7 @@ export default function MapClient() {
                 onClick={addTestUsers}
                 className="test-data-btn"
               >
-                ⚡ Thêm dữ liệu mẫu cực nhanh
+                ⚡ Thêm nhanh địa chỉ mẫu
               </button>
             </div>
           </section>
