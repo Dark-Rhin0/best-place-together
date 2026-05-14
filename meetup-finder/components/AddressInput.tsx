@@ -6,9 +6,10 @@ import {
   autocompleteAddress,
   Suggestion,
 } from "@/lib/geocode";
+import "./AddressInput.css";
 
 type Props = {
-  onAddUser: (u: { lat: number; lng: number }) => void;
+  onAddUser: (u: { lat: number; lng: number; address: string }) => void;
 };
 
 export default function AddressInput({ onAddUser }: Props) {
@@ -43,39 +44,41 @@ export default function AddressInput({ onAddUser }: Props) {
     setLoading(false);
 
     if (!result) {
-      setError("Không tìm thấy địa chỉ");
+      setError("Hix, hông tìm thấy chỗ này...");
       return;
     }
 
-    onAddUser({ lat: result.lat, lng: result.lng });
+    onAddUser({ lat: result.lat, lng: result.lng, address: result.displayName });
     setAddress("");
     setSuggestions([]);
   }
 
   function handleSelect(s: Suggestion) {
-    onAddUser({ lat: s.lat, lng: s.lng }); // add marker
-
+    onAddUser({ lat: s.lat, lng: s.lng, address: s.displayName }); // add marker
     setAddress("");       // ✅ clear input
     setSuggestions([]);   // ✅ clear dropdown
   }
 
   return (
-    <div className="space-y-2 relative">
-      <input
-        className="w-full p-2 rounded text-black"
-        placeholder="Nhập địa chỉ của bạn (VD: 1 Đại Cồ Việt, Hà Nội)"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-      />
+    <div className="address-input-container">
+      <div className="input-wrapper">
+        <input
+          className="address-field"
+          placeholder="Bạn đang ở đâu nè?..."
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+        <div className="input-icon">📍</div>
+      </div>
 
       {/* Dropdown gợi ý */}
       {suggestions.length > 0 && (
-        <div className="absolute z-50 w-full bg-white text-black rounded shadow max-h-60 overflow-y-auto">
+        <div className="suggestions-dropdown">
           {suggestions.map((s, i) => (
             <div
               key={i}
               onClick={() => handleSelect(s)}
-              className="p-2 hover:bg-gray-200 cursor-pointer"
+              className="suggestion-item"
             >
               {s.displayName}
             </div>
@@ -86,12 +89,16 @@ export default function AddressInput({ onAddUser }: Props) {
       <button
         onClick={handleSubmit}
         disabled={loading}
-        className="px-4 py-2 bg-blue-600 rounded"
+        className="add-btn"
       >
-        {loading ? "Đang tìm..." : "Thêm địa chỉ"}
+        {loading ? "Đang tìm xíu..." : "Thêm vị trí"}
       </button>
 
-      {error && <div className="text-red-400">{error}</div>}
+      {error && (
+        <div className="text-red-500 text-sm font-bold animate-bounce mt-1">
+          ⚠️ {error}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,41 @@
+.leaflet-popup-content-wrapper {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow);
+}
+
+.leaflet-popup-tip {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+.leaflet-popup-content {
+  font-family: 'Inter', sans-serif;
+  margin: 12px 16px;
+}
+
+.popup-title {
+  font-weight: 800;
+  font-size: 1rem;
+  color: hsl(var(--foreground));
+  margin-bottom: 4px;
+}
+
+.popup-address {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.4;
+}
+
+.popup-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: hsl(var(--accent));
+  color: white;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  margin-top: 4px;
+}

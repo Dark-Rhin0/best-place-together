@@ -1,0 +1,116 @@
+.address-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.address-field {
+  width: 100%;
+  padding: 1rem 2.5rem 1rem 1.25rem;
+  background-color: #ffffff;
+  border: 2px solid #f0f0f0;
+  border-radius: 1.25rem;
+  color: hsl(var(--foreground));
+  outline: none;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.dark .address-field {
+  background-color: hsl(var(--muted));
+  border-color: hsl(var(--border));
+  box-shadow: none;
+}
+
+.address-field:focus {
+  border-color: hsl(var(--accent));
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px hsla(var(--accent), 0.15);
+}
+
+.input-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: hsl(var(--muted-foreground));
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  z-index: 2000;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  margin-top: 0.5rem;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  max-height: 16rem;
+  overflow-y: auto;
+  animation: slide-down 0.2s ease-out;
+}
+
+.suggestion-item {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid hsla(var(--border), 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: hsla(var(--accent), 0.1);
+  color: hsl(var(--accent));
+}
+
+.add-btn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background-color: hsl(var(--accent));
+  color: white;
+  font-weight: 700;
+  border-radius: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px hsla(var(--accent), 0.3);
+}
+
+.add-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.add-btn:disabled {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

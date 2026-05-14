@@ -1,8 +1,9 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "./MapView.css";
 import { useEffect } from "react";
 
 /* ===================== TYPES ===================== */
@@ -26,6 +27,7 @@ type Props = {
   users: User[];
   places: Place[];
   center: { lat: number; lng: number };
+  isDark: boolean;
 };
 
 /* ===================== AUTO FIT ===================== */
@@ -121,6 +123,7 @@ export default function MapView({
   users,
   places,
   center,
+  isDark,
 }: Props) {
   const nearestPlace =
     places.length > 0
@@ -129,16 +132,27 @@ export default function MapView({
       )
       : null;
 
+  const tileUrl = isDark 
+    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+
+  const attribution = isDark
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
   return (
     <MapContainer
       center={[center.lat, center.lng]}
       zoom={14}
-      className="h-[400px] w-full rounded"
+      className="h-full w-full"
+      zoomControl={false}
     >
       <TileLayer
-        attribution="© OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution={attribution}
+        url={tileUrl}
       />
+
+      <ZoomControl position="bottomright" />
 
       <AutoFit users={users} places={places} />
 
@@ -146,19 +160,20 @@ export default function MapView({
       {users.map((u) => (
         <Marker key={u.id} position={[u.lat, u.lng]}>
           <Popup>
-            <strong>{u.name}</strong>
+            <div className="popup-title">{u.name}</div>
           </Popup>
         </Marker>
       ))}
 
-      {/* CENTER */}
       {/* CENTER */}
       {users.length > 0 && (
         <Marker
           position={[center.lat, center.lng]}
           icon={yellowIcon}
         >
-          <Popup>📍 Điểm gặp tối ưu</Popup>
+          <Popup>
+            <div className="popup-title">📍 Điểm gặp tối ưu</div>
+          </Popup>
         </Marker>
       )}
 
@@ -166,12 +181,16 @@ export default function MapView({
       {places.map((p) => (
         <Marker key={p.id} position={[p.lat, p.lng]} icon={redIcon}>
           <Popup>
-            <div className="font-semibold">
-              {p.name} {nearestPlace?.id === p.id && "⭐ Tốt nhất!"}
+            <div className="popup-title">
+              {p.name}
             </div>
+            
+            {nearestPlace?.id === p.id && (
+              <div className="popup-badge">⭐ Tốt nhất!</div>
+            )}
 
             {p.address && (
-              <div className="text-sm text-gray-600">
+              <div className="popup-address mt-1">
                 {p.address}
               </div>
             )}
